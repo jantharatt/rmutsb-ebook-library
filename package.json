@@ -1,0 +1,29 @@
+{
+    "$schema": "https://www.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite"
+    },
+    "devDependencies": {
+        "@fontsource/noto-serif-thai": "^5.1.0",
+        "@fontsource/sarabun": "^5.1.0",
+        "@tailwindcss/forms": "^0.5.2",
+        "alpinejs": "^3.4.2",
+        "autoprefixer": "^10.4.2",
+        "axios": "^1.11.0",
+        "bootstrap-icons": "^1.11.3",
+        "chart.js": "^4.4.4",
+        "concurrently": "^9.0.1",
+        "laravel-vite-plugin": "^2.0.0",
+        "pdf-lib": "^1.17.1",
+        "postcss": "^8.4.31",
+        "sweetalert2": "^11.14.5",
+        "tailwindcss": "^3.4.19",
+        "vite": "^7.0.7"
+    },
+    "dependencies": {
+        "pdfjs-dist": "^6.4.299"
+    }
+}
