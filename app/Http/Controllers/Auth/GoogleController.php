@@ -39,6 +39,21 @@ class GoogleController extends Controller
             ]);
         }
 
+        // ตรวจอีเมลกับระบบ e-profile ของมหาวิทยาลัย
+        $profile = UniversityAccount::fetchEProfile($email);
+
+        if ($profile === null) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'ไม่สามารถตรวจสอบอีเมลกับระบบ e-profile ได้ในขณะนี้ กรุณาลองใหม่อีกครั้ง',
+            ]);
+        }
+
+        if ($profile === []) {
+            return redirect()->route('login')->withErrors([
+                'email' => 'ไม่พบอีเมลนี้ในระบบ e-profile ของมหาวิทยาลัย',
+            ]);
+        }
+
         $user = User::where('google_id', $googleUser->getId())->first()
             ?? User::where('email', $email)->first();
 
@@ -53,15 +68,25 @@ class GoogleController extends Controller
                 $user->google_id = $googleUser->getId();
                 $user->save();
             }
+            // อัปเดตคณะ/หน่วยงานจาก e-profile ทุกครั้งที่เข้าสู่ระบบ
+            $user->fill(array_filter([
+                'faculty' => $profile['faculty_name_th'] ?? null,
+                'department' => $profile['division_name_th'] ?? null,
+            ]));
+            if ($user->isDirty()) {
+                $user->save();
+            }
             // ยกระดับเป็นแอดมินตาม ADMIN_EMAILS (ถ้ามี)
             if (UniversityAccount::isAdminEmail($user->email) && $user->role !== 'admin') {
                 $user->forceFill(['role' => 'admin'])->save();
             }
         } else {
             // บัญชีใหม่: กำหนดสิทธิ์ตามรูปแบบอีเมล (ตัวเลข = นักศึกษา, ตัวอักษร = อาจารย์/บุคลากร)
-            $user = UniversityAccount::findOrCreate($email, $googleUser->getName(), [
+            $user = UniversityAccount::findOrCreate($email, $profile['name'] ?? $googleUser->getName(), array_filter([
                 'google_id' => $googleUser->getId(),
-            ]);
+                'faculty' => $profile['faculty_name_th'] ?? null,
+                'department' => $profile['division_name_th'] ?? null,
+            ]), UniversityAccount::roleFromProfileType($profile['type'] ?? null));
         }
 
         Auth::login($user);

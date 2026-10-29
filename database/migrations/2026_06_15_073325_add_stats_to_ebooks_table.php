@@ -13,9 +13,13 @@ return new class extends Migration
     {
         Schema::table('ebooks', function (Blueprint $table) {
 
-            $table->integer('view_count')->default(0);
+            if (!Schema::hasColumn('ebooks', 'view_count')) {
+                $table->integer('view_count')->default(0);
+            }
 
-            $table->integer('borrow_count')->default(0);
+            if (!Schema::hasColumn('ebooks', 'borrow_count')) {
+                $table->integer('borrow_count')->default(0);
+            }
 
         });
     }

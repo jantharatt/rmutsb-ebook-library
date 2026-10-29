@@ -10,25 +10,33 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
 
-            $table->enum('role', [
+            if (!Schema::hasColumn('users', 'role')) {
+                $table->enum('role', [
                 'student',
                 'teacher',
                 'staff',
                 'alumni',
                 'admin'
             ])->default('student')->after('email');
+            }
 
-            $table->string('faculty')
-                ->nullable()
-                ->after('role');
+            if (!Schema::hasColumn('users', 'faculty')) {
+                $table->string('faculty')
+                    ->nullable()
+                    ->after('role');
+            }
 
-            $table->string('department')
-                ->nullable()
-                ->after('faculty');
+            if (!Schema::hasColumn('users', 'department')) {
+                $table->string('department')
+                    ->nullable()
+                    ->after('faculty');
+            }
 
-            $table->boolean('status')
-                ->default(true)
-                ->after('department');
+            if (!Schema::hasColumn('users', 'status')) {
+                $table->boolean('status')
+                    ->default(true)
+                    ->after('department');
+            }
         });
     }
 

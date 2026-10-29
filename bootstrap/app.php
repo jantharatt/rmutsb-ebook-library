@@ -11,6 +11,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // อยู่หลัง reverse proxy ที่ทำ HTTPS → เชื่อ X-Forwarded-* เพื่อให้สร้าง URL เป็น https
+        $middleware->trustProxies(at: '*');
+
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'active' => \App\Http\Middleware\EnsureAccountIsActive::class,

@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -89,9 +90,53 @@ class UniversityAccount
     }
 
     /**
+     * ตรวจอีเมลกับระบบ e-profile ของมหาวิทยาลัย
+     * คืนข้อมูลโปรไฟล์ (array) เมื่อพบ, [] เมื่อไม่พบ, null เมื่อเรียก API ไม่สำเร็จ
+     * ถ้าไม่ได้ตั้งค่า URL จะข้ามการตรวจและคืน ['skipped' => true]
+     */
+    public static function fetchEProfile(string $email): ?array
+    {
+        $url = config('services.login.eprofile_url');
+
+        if (! $url) {
+            return ['skipped' => true];
+        }
+
+        try {
+            $json = Http::timeout(10)->acceptJson()
+                ->get($url, ['email' => self::normalize($email)])
+                ->throw()
+                ->json();
+
+            return ($json['found'] ?? false) ? $json : [];
+        } catch (\Throwable $e) {
+            report($e);
+
+            return null;
+        }
+    }
+
+    /** แปลง "ประเภท" จาก e-profile เป็น role ของระบบ (null = ไม่รู้จัก ใช้กติกาตามอีเมลแทน) */
+    public static function roleFromProfileType(?string $type): ?string
+    {
+        $type = trim((string) $type);
+
+        return match (true) {
+            $type === '' => null,
+            str_contains($type, 'อาจารย์') => 'teacher',
+            str_contains($type, 'นักศึกษา') => 'student',
+            str_contains($type, 'ศิษย์เก่า') => 'alumni',
+            str_contains($type, 'เจ้าหน้าที่'),
+            str_contains($type, 'บุคลากร'),
+            str_contains($type, 'พนักงาน') => 'staff',
+            default => null,
+        };
+    }
+
+    /**
      * หา/สร้างบัญชีจากอีเมล (สร้างใหม่พร้อมสิทธิ์ตามรูปแบบอีเมล)
      */
-    public static function findOrCreate(string $email, ?string $name = null, array $extra = []): User
+    public static function findOrCreate(string $email, ?string $name = null, array $extra = [], ?string $role = null): User
     {
         $email = self::normalize($email);
 
@@ -102,7 +147,7 @@ class UniversityAccount
                 'name' => $name ?: self::defaultName($email),
                 'email' => $email,
                 'password' => Hash::make(Str::random(40)),
-                'role' => self::defaultRole($email),
+                'role' => self::isAdminEmail($email) ? 'admin' : ($role ?: self::defaultRole($email)),
                 'status' => 1,
             ], $extra));
         }

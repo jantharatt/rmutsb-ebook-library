@@ -62,6 +62,7 @@ return [
     'login' => [
         'email_only' => (bool) env('LOGIN_EMAIL_ONLY', false),
         'domain' => env('LOGIN_EMAIL_DOMAIN', 'rmutsb.ac.th'),
+        'eprofile_url' => env('EPROFILE_CHECK_URL', 'https://e-profile.rmutsb.ac.th/api/checkEmail'),
         'admin_emails' => array_values(array_filter(array_map(
             fn ($e) => strtolower(trim($e)),
             explode(',', (string) env('ADMIN_EMAILS', ''))
