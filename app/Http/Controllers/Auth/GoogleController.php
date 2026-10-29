@@ -40,7 +40,10 @@ class GoogleController extends Controller
         }
 
         // ตรวจอีเมลกับระบบ e-profile ของมหาวิทยาลัย
-        $profile = UniversityAccount::fetchEProfile($email);
+        // นักศึกษา (อีเมล -st) ไม่มีใน e-profile → ข้ามการตรวจ ตีเป็นนักศึกษาตามรูปแบบอีเมล
+        $profile = UniversityAccount::isStudentEmail($email)
+            ? ['skipped' => true]
+            : UniversityAccount::fetchEProfile($email);
 
         if ($profile === null) {
             return redirect()->route('login')->withErrors([

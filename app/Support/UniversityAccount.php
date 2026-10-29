@@ -39,10 +39,10 @@ class UniversityAccount
         return Str::before(self::normalize($email), '@');
     }
 
-    /** อีเมลนักศึกษา: ขึ้นต้นด้วยตัวเลข (เช่น 6612345678-st) */
+    /** อีเมลนักศึกษา: ลงท้ายด้วย -st หรือขึ้นต้นด้วยตัวเลข (เช่น 6612345678-st) */
     public static function isStudentEmail(string $email): bool
     {
-        return (bool) preg_match('/^\d/', self::localPart($email));
+        return (bool) preg_match('/-st$|^\d/', self::localPart($email));
     }
 
     /** อีเมลอาจารย์/บุคลากร: ขึ้นต้นด้วยตัวอักษร (เช่น ชื่อ.นามสกุล) */
