@@ -15,16 +15,10 @@
             @elseif (auth()->user()->isAdmin())
                 <span class="badge badge-ink"><i class="bi bi-shield-check"></i> สิทธิ์ผู้ดูแลระบบ</span>
             @endif
-            <button type="button" class="btn btn-outline btn-sm" onclick="document.getElementById('reader-frame').requestFullscreen?.()">
-                <i class="bi bi-arrows-fullscreen"></i> เต็มจอ
-            </button>
         </div>
     </div>
 
-    <div class="card overflow-hidden">
-        <iframe id="reader-frame" src="{{ route('ebooks.stream', $ebook) }}#toolbar=0&navpanes=0&view=FitH"
-            title="{{ $ebook->title }}" class="block h-[82vh] w-full bg-ink-50" allowfullscreen></iframe>
-    </div>
+    @include('ebooks.partials.book-reader', ['src' => route('ebooks.stream', $ebook)])
 
     <p class="mt-3 text-center text-xs text-ink-400">
         เอกสารนี้สงวนลิขสิทธิ์ ใช้เพื่อการศึกษาภายในมหาวิทยาลัยเท่านั้น ห้ามเผยแพร่หรือทำซ้ำ

@@ -65,9 +65,17 @@
                 <input type="text"
                 name="title"
                 required
+                value="{{ old('title') }}"
                 class="w-full h-8 text-xs rounded-md border-gray-300 focus:border-indigo-500 focus:ring-indigo-500">
 
 
+            </div>
+
+            {{-- ชื่อเรื่องรอง --}}
+            <div>
+                <label class="block text-[11px] font-semibold text-gray-600 mb-1">ชื่อเรื่องรอง</label>
+                <input type="text" name="subtitle" value="{{ old('subtitle') }}"
+                class="w-full h-8 text-xs rounded-md border-gray-300">
             </div>
 
 
@@ -171,7 +179,7 @@
             <div>
 
                 <label class="block text-[11px] font-semibold text-gray-600 mb-1">
-                    ศูนย์พื้นที่
+                    สถานที่จัดเก็บ (ศูนย์พื้นที่)
                 </label>
 
 
@@ -322,9 +330,7 @@
                 </label>
 
 
-                <input type="text"
-                name="subject_heading"
-                class="w-full h-8 text-xs rounded-md border-gray-300">
+                @include('ebooks.partials.multi-input', ['name' => 'subject_headings', 'values' => old('subject_headings', []), 'placeholder' => 'หัวเรื่อง'])
 
 
             </div>
@@ -423,9 +429,7 @@
                 </label>
 
 
-                <input type="text"
-                name="added_personal_name"
-                class="w-full h-8 text-xs rounded-md border-gray-300">
+                @include('ebooks.partials.multi-input', ['name' => 'added_personal_names', 'values' => old('added_personal_names', []), 'placeholder' => 'ชื่อบุคคล เช่น ผู้แต่งร่วม ผู้แปล บรรณาธิการ'])
 
 
             </div>
@@ -645,21 +649,7 @@
 
 
 
-            {{-- สถานที่เก็บ --}}
-
-            <div>
-
-                <label class="block text-[11px] font-semibold text-gray-600 mb-1">
-                    สถานที่เก็บ (ศูนย์พื้นที่)
-                </label>
-
-
-                <input type="text"
-                name="campus"
-                class="w-full h-8 text-xs rounded-md border-gray-300">
-
-
-            </div>
+            
 
 
 
@@ -711,21 +701,8 @@
 
 
 
-            {{-- แหล่งที่มา --}}
-
-            <div>
-
-                <label class="block text-[11px] font-semibold text-gray-600 mb-1">
-                    แหล่งที่มา
-                </label>
-
-
-                <input type="text"
-                name="source"
-                class="w-full h-8 text-xs rounded-md border-gray-300">
-
-
-            </div>
+            {{-- แหล่งที่มา / ราคา --}}
+            @include('ebooks.partials.source-price')
 
 
 

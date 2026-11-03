@@ -110,7 +110,7 @@
 
                             <label class="block text-[11px] font-semibold text-gray-600 mb-1">
 
-                                ศูนย์พื้นที่
+                                สถานที่จัดเก็บ (ศูนย์พื้นที่)
 
                             </label>
 
@@ -172,6 +172,13 @@
 
 
                         </div>
+
+            {{-- ชื่อเรื่องรอง --}}
+            <div>
+                <label class="block text-[11px] font-semibold text-gray-600 mb-1">ชื่อเรื่องรอง</label>
+                <input type="text" name="subtitle" value="{{ old('subtitle', $ebook->subtitle) }}"
+                class="w-full h-8 text-xs rounded-md border-gray-300">
+            </div>
 
 
 
@@ -377,9 +384,7 @@
                             </label>
 
 
-                            <input type="text" name="subject_heading"
-                                value="{{ old('subject_heading', $ebook->subject_heading) }}"
-                                class="w-full h-8 text-xs rounded-md border-gray-300">
+                            @include('ebooks.partials.multi-input', ['name' => 'subject_headings', 'values' => old('subject_headings', $ebook->subject_headings), 'placeholder' => 'หัวเรื่อง'])
 
 
                         </div>
@@ -488,9 +493,7 @@
                             </label>
 
 
-                            <input type="text" name="added_personal_name"
-                                value="{{ old('added_personal_name', $ebook->added_personal_name) }}"
-                                class="w-full h-8 text-xs rounded-md border-gray-300">
+                            @include('ebooks.partials.multi-input', ['name' => 'added_personal_names', 'values' => old('added_personal_names', $ebook->added_personal_names), 'placeholder' => 'ชื่อบุคคล เช่น ผู้แต่งร่วม ผู้แปล บรรณาธิการ'])
 
 
                         </div>
@@ -709,20 +712,7 @@
 
 
 
-                        <div>
-
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-1">
-
-                                สถานที่เก็บ (ศูนย์พื้นที่)
-
-                            </label>
-
-
-                            {{-- <input type="text" name="campus" value="{{ old('campus', $ebook->campus) }}"
-                                class="w-full h-8 text-xs rounded-md border-gray-300"> --}}
-
-
-                        </div>
+                        
 
 
 
@@ -770,20 +760,7 @@
 
 
 
-                        <div>
-
-                            <label class="block text-[11px] font-semibold text-gray-600 mb-1">
-
-                                แหล่งที่มา
-
-                            </label>
-
-
-                            <input type="text" name="source" value="{{ old('source', $ebook->source) }}"
-                                class="w-full h-8 text-xs rounded-md border-gray-300">
-
-
-                        </div>
+                        @include('ebooks.partials.source-price', ['source' => $ebook->source, 'price' => $ebook->price])
 
 
 

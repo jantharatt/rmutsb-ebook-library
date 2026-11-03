@@ -12,6 +12,7 @@ class Ebook extends Model
 {
 protected $fillable = [
     'title',
+    'subtitle',
     'author',
     'isbn',
     'publisher',
@@ -48,6 +49,7 @@ protected $fillable = [
     'faculty',
     'cataloguer',
     'source',
+    'price',
 
     'view_count',
     'borrow_count',
@@ -65,6 +67,22 @@ protected $fillable = [
     public function getCoverUrlAttribute(): ?string
     {
         return app(EbookFileService::class)->coverUrl($this);
+    }
+
+    /** แยกค่าหลายรายการที่เก็บคั่นด้วยขึ้นบรรทัดใหม่ เป็น array */
+    public static function splitList(?string $value): array
+    {
+        return array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', (string) $value))));
+    }
+
+    public function getAddedPersonalNamesAttribute(): array
+    {
+        return self::splitList($this->added_personal_name);
+    }
+
+    public function getSubjectHeadingsAttribute(): array
+    {
+        return self::splitList($this->subject_heading);
     }
 
     /** หนังสือที่เปิดให้บริการ (status = 1) */

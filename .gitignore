@@ -45,3 +45,7 @@ Thumbs.db
 /storage/framework/views/*
 !/storage/framework/views/.gitignore
 .claude/
+
+# Local env copies
+env.php
+/public/storage_backup_*/

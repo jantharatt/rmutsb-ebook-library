@@ -16,10 +16,7 @@
         </div>
     </div>
 
-    <div class="card overflow-hidden">
-        <iframe src="{{ route('ebooks.sample', $ebook) }}#toolbar=0&navpanes=0&view=FitH"
-            title="ตัวอย่าง {{ $ebook->title }}" class="block h-[78vh] w-full bg-ink-50" loading="lazy"></iframe>
-    </div>
+    @include('ebooks.partials.book-reader', ['src' => route('ebooks.sample', $ebook)])
 
     <div class="alert alert-info mt-4">
         <i class="bi bi-info-circle mt-0.5"></i>

@@ -20,8 +20,8 @@
             'ครั้งที่พิมพ์' => $ebook->edition,
             'บรรณลักษณ์' => $ebook->physical_description,
             'ชื่อชุด' => $ebook->series_name,
-            'หัวเรื่อง' => $ebook->subject_heading,
-            'รายการเพิ่มชื่อบุคคล' => $ebook->added_personal_name,
+            'หัวเรื่อง' => implode(' ; ', $ebook->subject_headings) ?: null,
+            'รายการเพิ่มชื่อบุคคล' => implode(' ; ', $ebook->added_personal_names) ?: null,
             'รายการเพิ่มชื่อนิติบุคคล' => $ebook->added_corporate_name,
             'ภาษา' => $ebook->language,
         ],
@@ -31,9 +31,10 @@
             'หมวดหมู่' => $ebook->category ? $ebook->category->code.' '.$ebook->category->name : null,
             'เลขทะเบียน' => $ebook->registration_number,
             'ปีงบประมาณที่จัดซื้อ' => $ebook->budget_year,
-            'ศูนย์พื้นที่' => $ebook->campus,
+            'สถานที่จัดเก็บ' => $ebook->campus,
             'คณะ / สาขา' => $ebook->faculty,
             'แหล่งที่มา' => $ebook->source,
+            'ราคา (บาท)' => $adminMode && $ebook->price !== null ? number_format((float) $ebook->price, 2) : null,
             'ผู้ลงรายการ' => $adminMode ? $ebook->cataloguer : null,
         ],
     ];
@@ -129,6 +130,9 @@
             @endif
 
             <h1 class="mt-3 font-display text-2xl font-bold leading-snug text-ink-900 sm:text-3xl">{{ $ebook->title }}</h1>
+            @if ($ebook->subtitle)
+                <p class="mt-1 text-lg text-ink-600">{{ $ebook->subtitle }}</p>
+            @endif
 
             <p class="mt-2 text-ink-600">
                 <span class="text-ink-400">โดย</span> <span class="font-semibold">{{ $ebook->author ?: 'ไม่ระบุผู้แต่ง' }}</span>

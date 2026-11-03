@@ -60,6 +60,7 @@ public function index(Request $request)
 
                 $query->where(function ($q) use ($search) {
                     $q->where('title', 'like', "%{$search}%")
+                      ->orWhere('subtitle', 'like', "%{$search}%")
                       ->orWhere('title_en', 'like', "%{$search}%");
                 });
                 break;
@@ -95,6 +96,7 @@ public function index(Request $request)
                 $query->where(function($q) use ($search){
 
                     $q->where('title','like',"%{$search}%")
+                      ->orWhere('subtitle','like',"%{$search}%")
                       ->orWhere('author','like',"%{$search}%")
                       ->orWhere('added_personal_name','like',"%{$search}%")
                       ->orWhere('isbn','like',"%{$search}%")
@@ -181,6 +183,13 @@ public function store(Request $request)
     $validated = $request->validate([
         'title' => 'required|string|max:255',
         'author' => 'required|string|max:255',
+        'subtitle' => 'nullable|string|max:255',
+        'price' => 'nullable|numeric|min:0|max:99999999',
+        'added_personal_names' => 'nullable|array',
+        'added_personal_names.*' => 'nullable|string|max:255',
+        'subject_headings' => 'nullable|array',
+        'subject_headings.*' => 'nullable|string|max:255',
+        'source_other' => 'nullable|string|max:200',
         'category_id' => 'required|exists:categories,id',
         'pdf_file' => 'required|file|mimes:pdf|max:163840',
         'cover' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:5120',
@@ -202,7 +211,7 @@ public function store(Request $request)
         'physical_description' => 'nullable|string|max:255',
         'series_name' => 'nullable|string|max:255',
         'subject_heading' => 'nullable|string',
-        'added_personal_name' => 'nullable|string|max:255',
+        'added_personal_name' => 'nullable|string',
         'added_corporate_name' => 'nullable|string|max:255',
         'budget_year' => 'nullable|string|max:20',
         'registration_number' => 'nullable|string|max:255',
@@ -251,7 +260,7 @@ public function store(Request $request)
         $data['status'] = $data['status'] ?? 1;
         $data['view_count'] = 0;
         $data['borrow_count'] = 0;
-        $data['source'] = trim((string) ($validated['source'] ?? ''));
+        $data = $this->normalizeCatalogFields($data);
 
 
         $ebook = Ebook::create($data);
@@ -344,6 +353,13 @@ public function update(Request $request, Ebook $ebook)
     $validated = $request->validate([
         'title' => 'required|string|max:255',
         'author' => 'required|string|max:255',
+        'subtitle' => 'nullable|string|max:255',
+        'price' => 'nullable|numeric|min:0|max:99999999',
+        'added_personal_names' => 'nullable|array',
+        'added_personal_names.*' => 'nullable|string|max:255',
+        'subject_headings' => 'nullable|array',
+        'subject_headings.*' => 'nullable|string|max:255',
+        'source_other' => 'nullable|string|max:200',
         'category_id' => 'required|exists:categories,id',
        'isbn' => ['nullable', 'regex:/^[0-9]{10,13}$/'],
 
@@ -356,7 +372,7 @@ public function update(Request $request, Ebook $ebook)
         'subject_heading' => 'nullable|string',
         'call_number' => 'nullable|string|max:255',
         'call_number_copy' => 'nullable|string|max:255',
-        'added_personal_name' => 'nullable|string|max:255',
+        'added_personal_name' => 'nullable|string',
         'added_corporate_name' => 'nullable|string|max:255',
         'main_category_code' => 'nullable|string|max:255',
         'budget_year' => 'nullable|string|max:20',
@@ -440,10 +456,7 @@ public function update(Request $request, Ebook $ebook)
             $validated['file_path'] = $newPdfPath;
         }
 
-        // ป้องกัน source เป็น null ในฐานข้อมูล
-        $validated['source'] = trim(
-            (string) ($validated['source'] ?? '')
-        );
+        $validated = $this->normalizeCatalogFields($validated);
 
         // อัปเดตข้อมูลหนังสือ
         $ebook->update($validated);
@@ -669,6 +682,31 @@ private function storeDerivedFromRequest(Request $request, Ebook $ebook): void
     } catch (\Throwable $e) {
         report($e);
     }
+}
+
+/**
+ * รวมช่องที่เพิ่มได้หลายรายการ (+ เพิ่ม) เป็นข้อความคั่นบรรทัด
+ * และแปลงแหล่งที่มา "อื่นๆ" เป็นข้อความที่ระบุ
+ */
+private function normalizeCatalogFields(array $data): array
+{
+    foreach (['added_personal_names' => 'added_personal_name', 'subject_headings' => 'subject_heading'] as $input => $column) {
+        if (array_key_exists($input, $data)) {
+            $data[$column] = implode("\n", Ebook::splitList(implode("\n", (array) $data[$input]))) ?: null;
+        }
+        unset($data[$input]);
+    }
+
+    $source = trim((string) ($data['source'] ?? ''));
+    if ($source === 'อื่นๆ') {
+        $other = trim((string) ($data['source_other'] ?? ''));
+        $source = $other !== '' ? $other : 'อื่นๆ';
+    }
+    // ป้องกัน source เป็น null ในฐานข้อมูล
+    $data['source'] = $source;
+    unset($data['source_other']);
+
+    return $data;
 }
 
 private function isAdminView(): bool
