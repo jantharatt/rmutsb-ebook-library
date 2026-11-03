@@ -48,7 +48,15 @@ class BookReader {
         try {
             this.pdf = await pdfjsLib.getDocument({ url: this.src, withCredentials: true }).promise;
         } catch (e) {
-            this.setStatus('ไม่สามารถเปิดไฟล์ Ebook ได้ กรุณาลองใหม่อีกครั้ง');
+            console.error('[book-reader]', e);
+            const status = e?.status;
+            const messages = {
+                401: 'กรุณาเข้าสู่ระบบใหม่อีกครั้ง',
+                403: 'ไม่มีสิทธิ์เปิดอ่าน กรุณายืม Ebook เล่มนี้ก่อน',
+                404: 'ไม่พบไฟล์ Ebook หรือไฟล์ตัวอย่างยังไม่พร้อม',
+            };
+            this.setStatus(messages[status]
+                ?? `ไม่สามารถเปิดไฟล์ Ebook ได้ กรุณาลองใหม่อีกครั้ง (${status ? 'HTTP ' + status : e?.name || 'error'})`);
             return;
         }
 
