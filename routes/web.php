@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AuditLogController;
 use App\Http\Controllers\BorrowController;
 use App\Http\Controllers\BorrowPolicyController;
 use App\Http\Controllers\CategoryController;
@@ -56,6 +57,16 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
     Route::get('/users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::put('/users/{user}', [UserController::class, 'update'])->name('users.update');
+
+    // ประวัติการใช้งานของผู้ดูแลระบบ (Audit log)
+    Route::get('/audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+    Route::post('/audit-logs/archive', [AuditLogController::class, 'archive'])->name('audit-logs.archive');
+    Route::get('/audit-logs/archives/{file}', [AuditLogController::class, 'download'])
+        ->where('file', '[A-Za-z0-9_\-\.]+')
+        ->name('audit-logs.archives.download');
+    Route::get('/audit-logs/{auditLog}', [AuditLogController::class, 'show'])
+        ->whereNumber('auditLog')
+        ->name('audit-logs.show');
 
     // กลับโหมดผู้ดูแลระบบ
     Route::get('/admin-mode', function () {

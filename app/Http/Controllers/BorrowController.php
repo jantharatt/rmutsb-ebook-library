@@ -7,6 +7,7 @@ use App\Models\Ebook;
 use App\Models\BorrowPolicy;
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Services\BorrowLifecycle;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -17,6 +18,9 @@ public function index(Request $request)
 {
 
     $user = Auth::user();
+
+    // ตัดคืนรายการที่เลยกำหนดก่อนแสดงผล (กรณีงานตั้งเวลายังไม่ได้ทำงาน)
+    app(BorrowLifecycle::class)->autoReturnOverdue($user->isAdmin() ? null : $user->id);
 
 
     if(
@@ -160,11 +164,8 @@ public function index(Request $request)
         return DB::transaction(function () use ($user, $ebook, $policy) {
             User::whereKey($user->id)->lockForUpdate()->first();
 
-            // รายการที่เลยกำหนดแต่ยังเป็น borrowed → ปรับเป็น expired ก่อนนับ
-            Borrow::where('user_id', $user->id)
-                ->where('status', 'borrowed')
-                ->whereDate('due_date', '<', today())
-                ->update(['status' => 'expired']);
+            // รายการที่เลยกำหนดแล้ว → ตัดคืนอัตโนมัติก่อนนับสิทธิ์ (กรณีงานตั้งเวลายังไม่ได้ทำงาน)
+            app(BorrowLifecycle::class)->autoReturnOverdue($user->id);
 
             $alreadyBorrowed = Borrow::where('user_id', $user->id)
                 ->where('ebook_id', $ebook->id)
@@ -240,6 +241,7 @@ public function index(Request $request)
             'due_date' => $base->addDays(7)->toDateString(),
             'renew_count' => (int) $borrow->renew_count + 1,
             'status' => 'borrowed',
+            'reminder_sent_at' => null, // รอบใหม่ → เตือนอีกครั้งก่อนครบกำหนด
         ]);
 
         return back()->with('success', 'ต่ออายุ Ebook สำเร็จ (+7 วัน)');

@@ -511,10 +511,14 @@ public function update(Request $request, Ebook $ebook)
         $this->files->deleteAutoCover($ebook);
         $this->files->deletePreview($ebook);
 
-        // ลบประวัติการยืมของ Ebook นี้
-        $ebook->borrows()->delete();
+        // ลบประวัติการยืมของ Ebook นี้ (ลบแบบ mass ไม่ผ่าน model event จึงระบุจำนวนไว้ใน audit log ของ Ebook)
+        $deletedBorrows = $ebook->borrows()->delete();
 
         // ลบข้อมูล Ebook
+        if ($deletedBorrows) {
+            $ebook->auditDescription = "ลบประวัติการยืมของ Ebook นี้ {$deletedBorrows} รายการ";
+        }
+
         $ebook->delete();
 
         return redirect()
@@ -570,11 +574,11 @@ public function reader(Ebook $ebook)
             ->first();
 
         if ($borrow && ! $borrow->isActive()) {
-            $borrow->update(['status' => 'expired']);
+            app(\App\Services\BorrowLifecycle::class)->autoReturnOverdue(Auth::id());
 
             return redirect()
                 ->route('ebooks.show', $ebook)
-                ->with('error', 'Ebook หมดอายุการยืมแล้ว สามารถยืมใหม่ได้');
+                ->with('error', 'ครบกำหนดการยืมแล้ว ระบบคืน Ebook ให้อัตโนมัติ สามารถยืมใหม่ได้');
         }
 
         return redirect()

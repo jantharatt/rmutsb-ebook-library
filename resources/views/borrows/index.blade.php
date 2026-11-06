@@ -102,13 +102,15 @@
                                 </td>
                                 <td class="whitespace-nowrap">
                                     @if ($borrow->status === 'returned')
-                                        <span class="badge badge-ink">คืนแล้ว</span>
+                                        <span class="badge badge-ink">{{ $borrow->auto_returned ? 'คืนอัตโนมัติ' : 'คืนแล้ว' }}</span>
                                         @if ($borrow->return_date)
-                                            <div class="mt-0.5 text-xs text-ink-400">{{ ThaiDate::short($borrow->return_date) }}</div>
+                                            <div class="mt-0.5 text-xs text-ink-400">
+                                                {{ ThaiDate::short($borrow->return_date) }}{{ $borrow->auto_returned ? ' (ครบกำหนด)' : '' }}
+                                            </div>
                                         @endif
                                     @elseif ($lapsed)
                                         <span class="badge badge-red">หมดอายุการยืม</span>
-                                    @elseif ($borrow->days_left <= 2)
+                                    @elseif ($borrow->days_left <= 3)
                                         <span class="badge badge-amber">เหลือ {{ $borrow->days_left }} วัน</span>
                                     @else
                                         <span class="badge badge-green">กำลังยืม · เหลือ {{ $borrow->days_left }} วัน</span>
@@ -135,7 +137,7 @@
                                             </form>
                                         @endif
 
-                                        @if (! $adminMode && $lapsed && $borrow->ebook)
+                                        @if (! $adminMode && ($lapsed || $borrow->auto_returned) && $borrow->ebook)
                                             <a href="{{ route('ebooks.show', $borrow->ebook) }}" class="btn btn-gold btn-sm">ยืมอีกครั้ง</a>
                                         @endif
                                     </div>

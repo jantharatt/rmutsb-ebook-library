@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use App\Services\EbookFileService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Ebook extends Model
 {
+    use LogsActivity;
+
+    protected string $auditLabelAttribute = 'title';
+
+    /** ตัวนับและไฟล์ที่ระบบสร้างเอง ไม่ใช่การแก้ไขของแอดมิน */
+    protected array $auditExclude = ['view_count', 'borrow_count', 'preview_file'];
+
 protected $fillable = [
     'title',
     'subtitle',

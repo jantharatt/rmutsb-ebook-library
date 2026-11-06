@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Services\AuditLogger;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\URL;
@@ -29,6 +31,19 @@ class AppServiceProvider extends ServiceProvider
 
             if ($user instanceof \App\Models\User && ! $user->email_verified_at) {
                 $user->forceFill(['email_verified_at' => now()])->saveQuietly();
+            }
+        });
+
+        // Audit log: การเข้า/ออกจากระบบของผู้ดูแลระบบ (AuditLogger กรองเฉพาะแอดมิน)
+        Event::listen(Login::class, function (Login $event) {
+            if ($event->user instanceof \App\Models\User) {
+                AuditLogger::log('login', actor: $event->user);
+            }
+        });
+
+        Event::listen(Logout::class, function (Logout $event) {
+            if ($event->user instanceof \App\Models\User) {
+                AuditLogger::log('logout', actor: $event->user);
             }
         });
 

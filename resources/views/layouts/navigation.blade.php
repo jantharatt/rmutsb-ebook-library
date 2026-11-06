@@ -12,6 +12,7 @@
             ['route' => 'categories.index', 'match' => 'categories.*', 'icon' => 'bi-diagram-3', 'label' => 'หมวดหมู่'],
             ['route' => 'borrow-policies.index', 'match' => 'borrow-policies.*', 'icon' => 'bi-sliders', 'label' => 'นโยบายการยืม'],
             ['route' => 'users.index', 'match' => 'users.*', 'icon' => 'bi-people', 'label' => 'ผู้ใช้งาน'],
+            ['route' => 'audit-logs.index', 'match' => 'audit-logs.*', 'icon' => 'bi-clock-history', 'label' => 'ประวัติการใช้งาน'],
         ]
         : [
             ['route' => $isAdmin ? 'library' : 'user.home', 'match' => ['user.home', 'library'], 'icon' => 'bi-house-door', 'label' => 'หน้าแรก'],

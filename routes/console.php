@@ -4,10 +4,6 @@ use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
-use App\Models\Borrow;
-use App\Mail\BorrowReminderMail;
-use Illuminate\Support\Facades\Mail;
-
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
@@ -15,62 +11,92 @@ Artisan::command('inspire', function () {
 
 /*
 |--------------------------------------------------------------------------
-| ส่งอีเมลก่อนครบกำหนด 2 วัน
+| ตัดคืนอัตโนมัติเมื่อเลยวันครบกำหนด (ไม่ได้ต่ออายุ) → สถานะ "คืนแล้ว"
+| ผู้ยืมอ่านได้ถึงสิ้นวันครบกำหนด จึงรันหลังเที่ยงคืนทุกวัน
+| php artisan borrows:auto-return [--dry-run]
 |--------------------------------------------------------------------------
 */
 
-Schedule::call(function () {
+Artisan::command('borrows:auto-return {--dry-run : แสดงจำนวนโดยไม่ทำจริง}', function () {
+    $lifecycle = app(\App\Services\BorrowLifecycle::class);
 
-    Borrow::with(['user','ebook'])
+    if ($this->option('dry-run')) {
+        $this->info('จะตัดคืนอัตโนมัติ '.$lifecycle->overdueQuery()->count().' รายการ');
 
-        ->where('status','borrowed')
+        return;
+    }
 
-        ->whereDate(
-            'due_date',
-            now()->addDays(2)->toDateString()
-        )
+    $this->info('ตัดคืนอัตโนมัติแล้ว '.$lifecycle->autoReturnOverdue().' รายการ');
+})->purpose('คืน Ebook ที่เลยกำหนดคืนและไม่ได้ต่ออายุโดยอัตโนมัติ');
 
-        ->get()
-
-        ->each(function ($borrow) {
-
-            Mail::to($borrow->user->email)
-
-                ->send(
-
-                    new BorrowReminderMail($borrow)
-
-                );
-
-        });
-
-})->daily();
-
+Schedule::command('borrows:auto-return')->dailyAt('00:05');
 
 
 /*
 |--------------------------------------------------------------------------
-| ครบกำหนด เปลี่ยนเป็น expired
+| ส่งอีเมลเตือนก่อนครบกำหนดคืน 3 วัน (ส่งครั้งเดียวต่อรอบการยืม/ต่ออายุ)
+| ถ้าวันไหนงานไม่ได้รัน รอบถัดไปจะส่งให้รายการที่ครบกำหนดภายใน 3 วันที่ยังไม่ได้เตือน
+| php artisan borrows:send-reminders [--dry-run]
 |--------------------------------------------------------------------------
 */
 
-Schedule::call(function () {
+Artisan::command('borrows:send-reminders {--dry-run : แสดงรายการโดยไม่ส่งจริง}', function () {
+    $lifecycle = app(\App\Services\BorrowLifecycle::class);
 
-    Borrow::where('status','borrowed')
-
-        ->whereDate(
-            'due_date',
-            '<',
-            now()->toDateString()
-        )
-
-        ->update([
-
-            'status' => 'expired'
-
+    if ($this->option('dry-run')) {
+        $rows = $lifecycle->reminderQuery()->get()->map(fn ($b) => [
+            $b->id, $b->user?->email, \Illuminate\Support\Str::limit($b->ebook?->title, 40), \App\Support\ThaiDate::short($b->due_date),
         ]);
+        $this->table(['ID', 'อีเมล', 'หนังสือ', 'ครบกำหนด'], $rows);
 
-})->daily();
+        return;
+    }
+
+    $r = $lifecycle->sendDueReminders();
+    $this->info("ส่งอีเมลเตือนแล้ว {$r['sent']} รายการ");
+
+    if ($r['failed'] || $r['skipped']) {
+        $this->warn("ส่งไม่สำเร็จ {$r['failed']} รายการ (จะลองใหม่รอบถัดไป), ข้าม {$r['skipped']} รายการ (ไม่มีอีเมลหรือหนังสือถูกลบ)");
+    }
+})->purpose('ส่งอีเมลเตือนผู้ยืมก่อนครบกำหนดคืน 3 วัน');
+
+Schedule::command('borrows:send-reminders')->dailyAt('08:00');
+
+/*
+|--------------------------------------------------------------------------
+| เก็บถาวร Audit log ทุกต้นไตรมาส (1 ม.ค. / 1 เม.ย. / 1 ก.ค. / 1 ต.ค.)
+| ส่งออก log ที่เก่ากว่าไตรมาสปัจจุบันเป็น CSV ใน storage/app/private/audit-archives แล้วลบออกจากตาราง
+| php artisan audit-logs:archive [--dry-run]
+|--------------------------------------------------------------------------
+*/
+
+Artisan::command('audit-logs:archive {--dry-run : แสดงจำนวนที่จะเก็บถาวรโดยไม่ทำจริง}', function () {
+    $archiver = app(\App\Services\AuditLogArchiver::class);
+    $pending = $archiver->pendingCount();
+    $cutoff = \App\Support\ThaiDate::short($archiver->cutoff());
+
+    if ($pending === 0) {
+        $this->info("ไม่มี log ที่เก่ากว่า {$cutoff}");
+
+        return;
+    }
+
+    if ($this->option('dry-run')) {
+        $this->info("จะเก็บถาวร log {$pending} รายการ (ก่อน {$cutoff})");
+
+        return;
+    }
+
+    $result = $archiver->archive();
+
+    foreach ($result['files'] as $file => $count) {
+        $this->line("  {$file}: {$count} รายการ");
+    }
+
+    $this->info("เก็บถาวรแล้ว {$result['count']} รายการ");
+})->purpose('ส่งออก audit log ของไตรมาสก่อนหน้าเป็นไฟล์ CSV แล้วลบออกจากตาราง');
+
+Schedule::command('audit-logs:archive')->quarterly();
 
 /*
 |--------------------------------------------------------------------------

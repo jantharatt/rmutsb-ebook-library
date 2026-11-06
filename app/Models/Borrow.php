@@ -2,11 +2,20 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Borrow extends Model
 {
+    use LogsActivity;
+
+    /** ชื่อรายการใน audit log: ชื่อหนังสือ — ชื่อผู้ยืม */
+    public function auditLabel(): ?string
+    {
+        return ($this->ebook?->title ?? 'Ebook #'.$this->ebook_id).' — '.($this->user?->name ?? 'ผู้ใช้ #'.$this->user_id);
+    }
+
     protected $fillable = [
         'user_id',
         'ebook_id',
@@ -15,7 +24,12 @@ class Borrow extends Model
         'return_date',
         'status',
         'renew_count',
+        'reminder_sent_at',
+        'auto_returned',
     ];
+
+    /** ข้อมูลที่ระบบตั้งเอง ไม่ใช่การแก้ไขของแอดมิน */
+    protected array $auditExclude = ['reminder_sent_at'];
 
     protected function casts(): array
     {
@@ -24,6 +38,8 @@ class Borrow extends Model
             'due_date' => 'date',
             'return_date' => 'date',
             'renew_count' => 'integer',
+            'reminder_sent_at' => 'datetime',
+            'auto_returned' => 'boolean',
         ];
     }
 
